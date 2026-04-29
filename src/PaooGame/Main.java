@@ -1,12 +1,15 @@
+
 package PaooGame;
 
-import PaooGame.GameWindow.GameWindow;
+
+import PaooGame.Meniu.*;
+
 
 public class Main
 {
     public static void main(String[] args)
     {
-        Game paooGame = new Game("PaooGame", 800, 600);
-        paooGame.StartGame();
+        MyFrame meniu=new MyFrame();
+        meniu.StartMenu(2640,1440);
     }
 }

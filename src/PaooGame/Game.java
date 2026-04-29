@@ -1,11 +1,23 @@
+
 package PaooGame;
 
+import PaooGame.Baza.Baza;
 import PaooGame.GameWindow.GameWindow;
 import PaooGame.Graphics.Assets;
+import PaooGame.Graphics.ImageLoader;
+import PaooGame.Graphics.Mesaje;
+import PaooGame.Graphics.SpriteSheet;
+import PaooGame.Input.KeyManager;
+//import PaooGame.Input.MouseManager;
+import PaooGame.Items.ItemType;
+import PaooGame.Meniu.UIPanel;
+import PaooGame.States.*;
 import PaooGame.Tiles.Tile;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferStrategy;
+import java.awt.image.BufferedImage;
 
 /*! \class Game
     \brief Clasa principala a intregului proiect. Implementeaza Game - Loop (Update -> Draw)
@@ -44,6 +56,8 @@ public class Game implements Runnable
 {
     private GameWindow      wnd;        /*!< Fereastra in care se va desena tabla jocului*/
     private boolean         runState;   /*!< Flag ce starea firului de executie.*/
+    private boolean         pauseState;
+    public int          died = 0;
     private Thread          gameThread; /*!< Referinta catre thread-ul de update si draw al ferestrei*/
     private BufferStrategy  bs;         /*!< Referinta catre un mecanism cu care se organizeaza memoria complexa pentru un canvas.*/
     /// Sunt cateva tipuri de "complex buffer strategies", scopul fiind acela de a elimina fenomenul de
@@ -59,9 +73,27 @@ public class Game implements Runnable
     ///                 ****************          *****************        ***************
 
     private Graphics        g;          /*!< Referinta catre un context grafic.*/
+    public BufferedImage loadScreen = ImageLoader.LoadImage("/textures/loadingscreen2.jpg");
+    public BufferedImage dieScreen = ImageLoader.LoadImage("/textures/DieScreen.png");
+    public BufferedImage pauseScreen = ImageLoader.LoadImage("/textures/pausescreen.png");
+    public BufferedImage endScreen = ImageLoader.LoadImage("/textures/finalgioc.jpg");
 
+    private boolean firstLoad = true;
+    private boolean loadGame = false;
+
+    ///Available states
+    private State playState;            /*!< Referinta catre joc.*/
+    private State menuState;            /*!< Referinta catre menu.*/
+    private State settingsState;        /*!< Referinta catre setari.*/
+    private State aboutState;           /*!< Referinta catre about.*/
+    private KeyManager keyManager;      /*!< Referinta catre obiectul care gestioneaza intrarile din partea utilizatorului.*/
+
+
+    private RefLinks refLink;            /*!< Referinta catre un obiect a carui sarcina este doar de a retine diverse referinte pentru a fi usor accesibile.*/
 
     private Tile tile; /*!< variabila membra temporara. Este folosita in aceasta etapa doar pentru a desena ceva pe ecran.*/
+
+//    MouseManager mouseManager;
 
     /*! \fn public Game(String title, int width, int height)
         \brief Constructor de initializare al clasei Game.
@@ -73,14 +105,32 @@ public class Game implements Runnable
         \param width Latimea ferestrei in pixeli.
         \param height Inaltimea ferestrei in pixeli.
      */
+
+    public Game(String title, int width, int height,int opt)
+    {
+        /// Obiectul GameWindow este creat insa fereastra nu este construita
+        /// Acest lucru va fi realizat in metoda init() prin apelul
+        /// functiei BuildGameWindow();
+
+
+
+        wnd = new GameWindow(title, width, height);
+
+        /// Resetarea flagului runState ce indica starea firului de executie (started/stoped)
+        runState = false;
+        ///Construirea obiectului de gestiune a evenimentelor de tastatura
+        keyManager = new KeyManager();
+        if(opt==1){
+            loadGame=true;
+        }
+    }
     public Game(String title, int width, int height)
     {
-            /// Obiectul GameWindow este creat insa fereastra nu este construita
-            /// Acest lucru va fi realizat in metoda init() prin apelul
-            /// functiei BuildGameWindow();
-        wnd = new GameWindow(title, width, height);
-            /// Resetarea flagului runState ce indica starea firului de executie (started/stoped)
-        runState = false;
+        /// Obiectul GameWindow este creat insa fereastra nu este construita
+        /// Acest lucru va fi realizat in metoda init() prin apelul
+        /// functiei BuildGameWindow();
+
+        new Game(title,width,height,0);
     }
 
     /*! \fn private void init()
@@ -92,11 +142,46 @@ public class Game implements Runnable
      */
     private void InitGame()
     {
-        wnd = new GameWindow("Schelet Proiect PAOO", 800, 600);
-            /// Este construita fereastra grafica.
+        ///Se construieste obiectul de tip shortcut ce va retine o serie de referinte catre elementele importante din program.
+        refLink = new RefLinks(this);
+        wnd.setRefLinks(refLink);
+        /// Este construita fereastra grafica.
         wnd.BuildGameWindow();
-            /// Se incarca toate elementele grafice (dale)
+
+        wnd.GetCanvas().createBufferStrategy(1);
+        wnd.GetCanvas().getBufferStrategy().getDrawGraphics().drawImage(loadScreen,0,0,1920, 1080, null);
+        wnd.GetCanvas().getBufferStrategy().show();
+
+        ///Sa ataseaza ferestrei managerul de tastatura pentru a primi evenimentele furnizate de fereastra.
+        wnd.GetWndFrame().addKeyListener(keyManager);
+//        wnd.GetWndFrame().addMouseListener(mouseManager);
+//        wnd.GetWndFrame().addMouseMotionListener(mouseManager);
+        ///Se incarca toate elementele grafice (dale)
         Assets.Init();
+        Mesaje.Init();
+
+
+        ///Definirea starilor programului
+        playState       = new PlayState(refLink);
+        menuState       = new MenuState(refLink);
+        settingsState   = new SettingsState(refLink);
+        aboutState      = new AboutState(refLink);
+        refLink.SetStatus(wnd.GetStat());
+//        mouseManager = new MouseManager(refLink);
+        ///Seteaza starea implicita cu care va fi lansat programul in executie
+        State.SetState(playState);
+
+        Baza.createDB();
+        if(loadGame){
+            String enemy=(this.LoadSave()).split(" ")[0];
+//            refLink.GetMap().Update();
+            playState.Update();
+            refLink.getStatusPanel().UpdateHealth(refLink.GetHero().GetLife());
+            refLink.GetHero().SetEnemyLife(enemy);
+        }
+        else {
+            Baza.SaveState(refLink,0);
+        }
     }
 
     /*! \fn public void run()
@@ -106,30 +191,46 @@ public class Game implements Runnable
      */
     public void run()
     {
-            /// Initializeaza obiectul game
+        /// Initializeaza obiectul game
+
+
         InitGame();
+
         long oldTime = System.nanoTime();   /*!< Retine timpul in nanosecunde aferent frame-ului anterior.*/
         long curentTime;                    /*!< Retine timpul curent de executie.*/
 
-            /// Apelul functiilor Update() & Draw() trebuie realizat la fiecare 16.7 ms
-            /// sau mai bine spus de 60 ori pe secunda.
+        /// Apelul functiilor Update() & Draw() trebuie realizat la fiecare 16.7 ms
+        /// sau mai bine spus de 60 ori pe secunda.
 
         final int framesPerSecond   = 60; /*!< Constanta intreaga initializata cu numarul de frame-uri pe secunda.*/
         final double timeFrame      = 1000000000 / framesPerSecond; /*!< Durata unui frame in nanosecunde.*/
 
-            /// Atat timp timp cat threadul este pornit Update() & Draw()
-        while (runState == true)
-        {
+        /// Atat timp timp cat threadul este pornit Update() & Draw()
+        while (runState || pauseState) {
+            while (runState == true) {
                 /// Se obtine timpul curent
-            curentTime = System.nanoTime();
+                curentTime = System.nanoTime();
                 /// Daca diferenta de timp dintre curentTime si oldTime mai mare decat 16.6 ms
-            if((curentTime - oldTime) > timeFrame)
-            {
-                /// Actualizeaza pozitiile elementelor
-                Update();
-                /// Deseneaza elementele grafica in fereastra.
-                Draw();
-                oldTime = curentTime;
+                if ((curentTime - oldTime) > timeFrame) {
+                    /// Actualizeaza pozitiile elementelor
+                    Update();
+                    /// Deseneaza elementele grafica in fereastra.
+                    Draw();
+                    oldTime = curentTime;
+                }
+            }
+
+            while (pauseState == true) {
+                /// Se obtine timpul curent
+                curentTime = System.nanoTime();
+                /// Daca diferenta de timp dintre curentTime si oldTime mai mare decat 16.6 ms
+                if ((curentTime - oldTime) > timeFrame) {
+                    /// Actualizeaza pozitiile elementelor
+                    Update();
+                    /// Deseneaza elementele grafica in fereastra.
+                    Draw();
+                    oldTime = curentTime;
+                }
             }
         }
 
@@ -144,17 +245,17 @@ public class Game implements Runnable
     {
         if(runState == false)
         {
-                /// Se actualizeaza flagul de stare a threadului
+            /// Se actualizeaza flagul de stare a threadului
             runState = true;
-                /// Se construieste threadul avand ca parametru obiectul Game. De retinut faptul ca Game class
-                /// implementeaza interfata Runnable. Threadul creat va executa functia run() suprascrisa in clasa Game.
+            /// Se construieste threadul avand ca parametru obiectul Game. De retinut faptul ca Game class
+            /// implementeaza interfata Runnable. Threadul creat va executa functia run() suprascrisa in clasa Game.
             gameThread = new Thread(this);
-                /// Threadul creat este lansat in executie (va executa metoda run())
+            /// Threadul creat este lansat in executie (va executa metoda run())
             gameThread.start();
         }
         else
         {
-                /// Thread-ul este creat si pornit deja
+            /// Thread-ul este creat si pornit deja
             return;
         }
     }
@@ -168,27 +269,34 @@ public class Game implements Runnable
     {
         if(runState == true)
         {
-                /// Actualizare stare thread
+            /// Actualizare stare thread
             runState = false;
-                /// Metoda join() arunca exceptii motiv pentru care trebuie incadrata intr-un block try - catch.
+            /// Metoda join() arunca exceptii motiv pentru care trebuie incadrata intr-un block try - catch.
             try
             {
-                    /// Metoda join() pune un thread in asteptare panca cand un altul isi termina executie.
-                    /// Totusi, in situatia de fata efectul apelului este de oprire a threadului.
+                /// Metoda join() pune un thread in asteptare panca cand un altul isi termina executie.
+                /// Totusi, in situatia de fata efectul apelului este de oprire a threadului.
                 gameThread.join();
             }
             catch(InterruptedException ex)
             {
-                    /// In situatia in care apare o exceptie pe ecran vor fi afisate informatii utile pentru depanare.
+                /// In situatia in care apare o exceptie pe ecran vor fi afisate informatii utile pentru depanare.
                 ex.printStackTrace();
             }
         }
         else
         {
-                /// Thread-ul este oprit deja.
+            /// Thread-ul este oprit deja.
             return;
         }
     }
+
+    public synchronized void PauseGame(){
+        if(pauseState){
+            State.SetState(menuState);
+        }
+    }
+
 
     /*! \fn private void Update()
         \brief Actualizeaza starea elementelor din joc.
@@ -197,6 +305,29 @@ public class Game implements Runnable
      */
     private void Update()
     {
+        ///Determina starea tastelor
+        keyManager.Update();
+        if(!refLink.GetHero().finalJ){
+            if((refLink.GetKeyManager().isPause() && !pauseState) || refLink.GetHero().GetLife()<=0){
+                if(keyManager.isPause())
+                    Baza.SaveState(refLink,1);
+       //         refLink.GetGame().StopGame();
+                pauseState=true;
+                runState=false;
+                PauseGame();
+                keyManager.pause=false;
+            }}
+        else {
+            pauseState=true;
+            runState=false;
+            PauseGame();
+        }
+        ///Trebuie obtinuta starea curenta pentru care urmeaza a se actualiza starea, atentie trebuie sa fie diferita de null.
+        if(State.GetState() != null)
+        {
+            ///Actualizez starea curenta a jocului daca exista.
+            State.GetState().Update();
+        }
 
     }
 
@@ -207,47 +338,112 @@ public class Game implements Runnable
      */
     private void Draw()
     {
-            /// Returnez bufferStrategy pentru canvasul existent
+        /// Returnez bufferStrategy pentru canvasul existent
         bs = wnd.GetCanvas().getBufferStrategy();
-            /// Verific daca buffer strategy a fost construit sau nu
+        if(firstLoad){
+            bs=null;
+            firstLoad=false;
+        }
+        /// Verific daca buffer strategy a fost construit sau nu
         if(bs == null)
         {
-                /// Se executa doar la primul apel al metodei Draw()
+            /// Se executa doar la primul apel al metodei Draw()
             try
             {
-                    /// Se construieste tripul buffer
+                /// Se construieste tripul buffer
                 wnd.GetCanvas().createBufferStrategy(3);
+
                 return;
             }
             catch (Exception e)
             {
-                    /// Afisez informatii despre problema aparuta pentru depanare.
+                /// Afisez informatii despre problema aparuta pentru depanare.
                 e.printStackTrace();
             }
         }
-            /// Se obtine contextul grafic curent in care se poate desena.
+        /// Se obtine contextul grafic curent in care se poate desena.
         g = bs.getDrawGraphics();
-            /// Se sterge ce era
+        /// Se sterge ce era
         g.clearRect(0, 0, wnd.GetWndWidth(), wnd.GetWndHeight());
 
-            /// operatie de desenare
-            // ...............
-            Tile.grassTile.Draw(g, 0 * Tile.TILE_WIDTH, 0);
-            Tile.soilTile.Draw(g, 1 * Tile.TILE_WIDTH, 0);
-            Tile.waterTile.Draw(g, 2 * Tile.TILE_WIDTH, 0);
-            Tile.mountainTile.Draw(g, 3 * Tile.TILE_WIDTH, 0);
-            Tile.treeTile.Draw(g, 4 * Tile.TILE_WIDTH, 0);
+        /// operatie de desenare
+        ///Trebuie obtinuta starea curenta pentru care urmeaza a se actualiza starea, atentie trebuie sa fie diferita de null.
+        if(State.GetState() != null)
+        {
+            ///Actualizez starea curenta a jocului daca exista.
+            State.GetState().Draw(g);
 
-            g.drawRect(1 * Tile.TILE_WIDTH, 1 * Tile.TILE_HEIGHT, Tile.TILE_WIDTH, Tile.TILE_HEIGHT);
+        }
+        /// end operatie de desenare
 
-
-            // end operatie de desenare
-            /// Se afiseaza pe ecran
+        /// Se afiseaza pe ecran
         bs.show();
-
-            /// Elibereaza resursele de memorie aferente contextului grafic curent (zonele de memorie ocupate de
-            /// elementele grafice ce au fost desenate pe canvas).
+        /// Elibereaza resursele de memorie aferente contextului grafic curent (zonele de memorie ocupate de
+        /// elementele grafice ce au fost desenate pe canvas).
         g.dispose();
     }
-}
 
+    /*! \fn public int GetWidth()
+        \brief Returneaza latimea ferestrei
+     */
+    public int GetWidth()
+    {
+        return wnd.GetWndWidth();
+    }
+
+    /*! \fn public int GetHeight()
+        \brief Returneaza inaltimea ferestrei
+     */
+    public int GetHeight()
+    {
+        return wnd.GetWndHeight();
+    }
+
+    /*! \fn public KeyManager GetKeyManager()
+        \brief Returneaza obiectul care gestioneaza tastatura.
+     */
+    public KeyManager GetKeyManager()
+    {
+        return keyManager;
+    }
+
+    public void setPauseState(boolean State) {
+        this.pauseState = State;
+    }
+    public void setPlayState(boolean State) {
+        this.runState = State;
+    }
+    public State getPlayState(){
+        return playState;
+    }
+
+    public String LoadSave(){
+        try {
+            String s = Baza.LoadState();
+            String[] x = s.split(" ");
+            refLink.GetMap().setId(Integer.parseInt(x[1]));
+            refLink.GetHero().SetLife(Integer.parseInt(x[2]));
+            refLink.GetInteraction().setOpenChest(Integer.parseInt(x[x.length - 2]) == 1);
+          //  refLink.GetHero().SetEnemyLife(x[x.length - 1]);
+            String u = x[x.length-4];
+            refLink.GetItemManager().reset();
+            for(int i=0;i<u.length()-1;i++) {
+                if(u.charAt(i)!='0')
+                    refLink.getStatusPanel().UpdateItems(ItemType.values()[i]);
+            }
+            refLink.getStatusPanel().setScore(Integer.parseInt(x[x.length-3]));
+            refLink.GetHero().SetX(Float.parseFloat(x[3]));
+            refLink.GetHero().SetY(Float.parseFloat(x[4]));
+            return (x[x.length-1]+" " + x[x.length-2]);
+        } catch (NullPointerException e) {
+            JOptionPane.showMessageDialog(null,"Nu exista salvari anterioare!");
+            System.exit(0);
+        }
+        return null;
+    }
+
+    public GameWindow getWnd(){
+        return wnd;
+    }
+}
+//test

@@ -1,3 +1,4 @@
+
 package PaooGame.Graphics;
 
 import java.awt.image.BufferedImage;
@@ -10,18 +11,18 @@ import java.awt.image.BufferedImage;
  */
 public class SpriteSheet
 {
-    private BufferedImage       spriteSheet;              /*!< Referinta catre obiectul BufferedImage ce contine sprite sheet-ul.*/
-    private static final int    tileWidth   = 48;   /*!< Latimea unei dale din sprite sheet.*/
-    private static final int    tileHeight  = 48;   /*!< Inaltime unei dale din sprite sheet.*/
+    private BufferedImage       spriteSheet;        /*!< Referinta catre obiectul BufferedImage ce contine sprite sheet-ul.*/
+    private static final int    tileWidth=80;   /*!< Latimea unei dale din sprite sheet.*/
+    private static final int    tileHeight=80;   /*!< Inaltime unei dale din sprite sheet.*/
 
     /*! \fn public SpriteSheet(BufferedImage sheet)
         \brief Constructor, initializeaza spriteSheet.
 
-        \param img Un obiect BufferedImage valid.
+        \param buffImg Un obiect BufferedImage valid.
      */
     public SpriteSheet(BufferedImage buffImg)
     {
-            /// Retine referinta catre BufferedImage object.
+        /// Retine referinta catre BufferedImage object.
         spriteSheet = buffImg;
     }
 
@@ -35,9 +36,13 @@ public class SpriteSheet
      */
     public BufferedImage crop(int x, int y)
     {
-            /// Subimaginea (dala) este regasita in sprite sheet specificad coltul stanga sus
-            /// al imaginii si apoi latimea si inaltimea (totul in pixeli). Coltul din stanga sus al imaginii
-            /// se obtine inmultind numarul de ordine al dalei cu dimensiunea in pixeli a unei dale.
+        /// Subimaginea (dala) este regasita in sprite sheet specificad coltul stanga sus
+        /// al imaginii si apoi latimea si inaltimea (totul in pixeli). Coltul din stanga sus al imaginii
+        /// se obtine inmultind numarul de ordine al dalei cu dimensiunea in pixeli a unei dale.
         return spriteSheet.getSubimage(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+    }
+    public BufferedImage crop(int x,int y,int w,int h)
+    {
+        return spriteSheet.getSubimage(x*w,y*h,w,h);
     }
 }

@@ -22,6 +22,11 @@ import PaooGame.Graphics.Assets;
     @Override
     public boolean IsSolid()
     {
+        return false;
+    }
+    @Override
+    public boolean IsWater()
+    {
         return true;
     }
 }

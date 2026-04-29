@@ -5,19 +5,19 @@ import PaooGame.Graphics.Assets;
 /*! \class public class SoilTile extends Tile
     \brief Abstractizeaza notiunea de dala de tip sol/pamant.
  */
-public class SoilTile extends Tile
+public class SpikeTile extends Tile
 {
     /*! \fn public SoilTile(int id)
         \brief Constructorul de initializare al clasei
 
         \param id Id-ul dalei util in desenarea hartii.
      */
-    public SoilTile(int id)
+    public SpikeTile(int id)
     {
-        super(Assets.soil, id);
+        super(Assets.spike, id);
     }
 
-    public boolean IsSolid()
+    public boolean IsSpike()
     {
         return true;
     }

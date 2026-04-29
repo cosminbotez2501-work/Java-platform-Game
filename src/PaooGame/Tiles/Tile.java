@@ -13,14 +13,31 @@ public class Tile
 
         /// De remarcat ca urmatoarele dale sunt statice si publice. Acest lucru imi permite sa le am incarcate
         /// o singura data in memorie
-    public static Tile grassTile        = new GrassTile(0);     /*!< Dala de tip iarba*/
-    public static Tile mountainTile     = new MountainTile(1);  /*!< Dala de tip munte/piatra*/
-    public static Tile waterTile        = new WaterTile(2);     /*!< Dala de tip apa*/
-    public static Tile treeTile         = new TreeTile(3);      /*!< Dala de tip copac*/
+    //public static Tile dirtTile        = new DirtTile(0);     /*!< Dala de tip pamant*/
+    //public static Tile mountainTile     = new MountainTile(1);  /*!< Dala de tip munte/piatra*/
     public static Tile soilTile         = new SoilTile(4);      /*!< Dala de tip sol/pamant*/
+    public static Tile waterTile        = new WaterTile(1);     /*!< Dala de tip apa*/
+    public static Tile vineTile         = new VineTile(2);      /*!< Dala de tip liana*/
+    public static Tile lavaTile         = new LavaTile(3);      /*!< Dala de tip lava*/
+    public static Tile transparentTile  = new TransparentTile(0); /*!<Dala transparenta*/
+    public static Tile danut            = new danut(13);           /*!<Alchimistul berii*/
+    public static Tile webTile          = new WebTile(6); /*!<Dala spiderWeb*/
+    public static Tile chest            = new chest(7);           /*!<Alchimistul berii*/
+    public static Tile gate             = new Gate(8);           /*!<Alchimistul berii*/
 
-    public static final int TILE_WIDTH  = 48;                       /*!< Latimea unei dale.*/
-    public static final int TILE_HEIGHT = 48;                       /*!< Inaltimea unei dale.*/
+    public static Tile rocksoil         = new RockSoilTile(9);
+    public static Tile spike            = new SpikeTile(10);
+    public static Tile magmaTile        = new MagmaTile(5);      /*!< Dala de tip lava*/
+
+    public static Tile transWall        = new TransparentWithC(20);
+    public static Tile whiteTent        = new WhiteTent(21);
+    public static Tile redTent          = new RedTent(22);
+    public static Tile openChest            = new OpenChest(17);
+
+    public static Tile Cazan            = new Cazan(30);
+
+    public static final int TILE_WIDTH  = 80;                       /*!< Latimea unei dale.*/
+    public static final int TILE_HEIGHT = 80;                       /*!< Inaltimea unei dale.*/
 
     protected BufferedImage img;                                    /*!< Imaginea aferenta tipului de dala.*/
     protected final int id;                                         /*!< Id-ul unic aferent tipului de dala.*/
@@ -64,6 +81,26 @@ public class Tile
         \brief Returneaza proprietatea de dala solida (supusa coliziunilor) sau nu.
      */
     public boolean IsSolid()
+    {
+        return false;
+    }
+    public boolean IsWater()
+    {
+        return false;
+    }
+    public boolean IsVine()
+    {
+        return false;
+    }
+    public boolean IsSpike()
+    {
+        return false;
+    }
+    public boolean IsLava()
+    {
+        return false;
+    }
+    public boolean IsWeb()
     {
         return false;
     }

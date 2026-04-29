@@ -2,6 +2,13 @@ package PaooGame.GameWindow;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+
+import PaooGame.Graphics.*;
+import PaooGame.Meniu.StatusPanel;
+import PaooGame.Meniu.UIPanel;
+import PaooGame.RefLinks;
 
 /*! \class GameWindow
     \brief Implementeaza notiunea de fereastra a jocului.
@@ -16,8 +23,9 @@ public class GameWindow
     private String  wndTitle;       /*!< titlul ferestrei*/
     private int     wndWidth;       /*!< latimea ferestrei in pixeli*/
     private int     wndHeight;      /*!< inaltimea ferestrei in pixeli*/
-
     private Canvas  canvas;         /*!< "panza/tablou" in care se poate desena*/
+    private StatusPanel statusPanel;
+    public RefLinks refLinks;
 
     /*! \fn GameWindow(String title, int width, int height)
             \brief Constructorul cu parametri al clasei GameWindow
@@ -75,6 +83,9 @@ public class GameWindow
             /// care trebuie setata aceasta proprietate
         wndFrame.setVisible(true);
 
+        statusPanel = new StatusPanel(200,0,refLinks); // viață inițială 100%
+        wndFrame.add(statusPanel, BorderLayout.NORTH);
+
             /// Creaza obiectul de tip canvas (panza) pe care se poate desena.
         canvas = new Canvas();
             /// In aceeasi maniera trebuiesc setate proprietatile pentru acest obiect
@@ -84,18 +95,29 @@ public class GameWindow
             /// Functia primeste ca parametru un obiect de tip Dimension ca incapsuleaza
             /// doua proprietati: latime si inaltime. Cum acest obiect nu exista
             /// a fost creat unul si dat ca parametru.
-        canvas.setPreferredSize(new Dimension(wndWidth, wndHeight));
+        canvas.setPreferredSize(new Dimension(wndWidth, wndHeight-30));
             /// Avand in vedere ca elementele unei ferestre pot fi scalate atunci cand
             /// fereastra este redimensionata
-        canvas.setMaximumSize(new Dimension(wndWidth, wndHeight));
-        canvas.setMinimumSize(new Dimension(wndWidth, wndHeight));
+        canvas.setMaximumSize(new Dimension(wndWidth, wndHeight-30));
+        canvas.setMinimumSize(new Dimension(wndWidth, wndHeight-30));
             /// Avand in vedere ca obiectul de tip canvas, proaspat creat, nu este automat
             /// adaugat in fereastra trebuie apelata metoda add a obiectul wndFrame
-        wndFrame.add(canvas);
+//        wndFrame.setContentPane(new Panel());
+//        wndFrame.setVisible(true);
+        wndFrame.add(canvas,BorderLayout.CENTER);
             /// Urmatorul apel de functie are ca scop eventuala redimensionare a ferestrei
             /// ca tot ce contine sa poate fi afisat complet
+
         wndFrame.pack();
+       // wndFrame.setContentPane(new Panel());
+        wndFrame.setVisible(true);
+
     }
+//    public void UpdateHealth(int newHealth) {
+//        if (statusPanel != null) {
+//            statusPanel.setHealth(newHealth);
+//        }
+//    }
 
     /*! \fn public int GetWndWidth()
         \brief Returneaza latimea ferestrei.
@@ -104,7 +126,7 @@ public class GameWindow
     {
         return wndWidth;
     }
-
+    public StatusPanel GetStat(){return this.statusPanel;}
     /*! \fn public int GetWndWidth()
         \brief Returneaza inaltimea ferestrei.
      */
@@ -116,7 +138,19 @@ public class GameWindow
     /*! \fn public int GetCanvas()
         \brief Returneaza referinta catre canvas-ul din fereastra pe care se poate desena.
      */
-    public Canvas GetCanvas() {
+    public Canvas GetCanvas()
+    {
         return canvas;
+    }
+
+    /*! \fn public int GetCanvas()
+        \brief Returneaza referinta catre canvas-ul din fereastra pe care se poate desena.
+     */
+    public JFrame GetWndFrame()
+    {
+        return wndFrame;
+    }
+    public void setRefLinks(RefLinks ref){
+        refLinks=ref;
     }
 }
